@@ -34,7 +34,7 @@ if uploaded_file is not None:
         if cluster_col is None:
             cluster_col = st.selectbox("Bước 2: Hệ thống không tìm thấy cột tên 'Cluster', vui lòng chọn cột phân cụm:", df.columns)
         else:
-            st.info(s"Hệ thống tự động nhận diện được cột phân cụm: **{cluster_col}**")
+            st.info(f"Hệ thống tự động nhận diện được cột phân cụm: **{cluster_col}**")
             
         # Chọn cột chứa nội dung câu trả lời Survey để AI đọc
         text_col = st.selectbox("Bước 3: Chọn cột chứa nội dung câu trả lời cần tóm tắt chủ đề:", df.columns)
