@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
-import requests
+from google import genai
+from google.genai import types
 
 # Cấu hình giao diện Streamlit
 st.set_page_config(page_title="AI Phân Tích Survey - TH4", page_icon="📊", layout="wide")
@@ -33,12 +34,11 @@ if uploaded_file is not None and my_api_key:
         if st.button("🚀 Bắt đầu để AI phân tích & tóm tắt ý nghĩa các Cluster"):
             with st.spinner("AI đang đọc dữ liệu và phân tích từng nhóm, bạn đợi chút nhé..."):
                 
+                # Khởi tạo Client bằng SDK mới nhất, tự động nhận diện khóa dạng AQ.
+                client = genai.Client(api_key=my_api_key)
+                
                 # Gom nhóm dữ liệu theo từng Cluster
                 grouped = df.groupby(cluster_col)
-                
-                # Cấu hình đường link API trực tiếp đến Google Gemini 1.5 Flash
-                url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={my_api_key}"
-                headers = {'Content-Type': 'application/json'}
                 
                 # Duyệt qua từng nhóm để gửi cho AI tóm tắt
                 for cluster_id, group_data in grouped:
@@ -61,25 +61,20 @@ if uploaded_file is not None and my_api_key:
                     Trả lời bằng tiếng Việt ngắn gọn, súc tích, rõ ràng theo các gạch đầu dòng.
                     """
                     
-                    # Tạo cấu trúc gói dữ liệu gửi đi
-                    payload = {
-                        "contents": [{
-                            "parts": [{"text": prompt}]
-                        }]
-                    }
-                    
-                    # Gửi yêu cầu trực tiếp qua HTTP POST
+                    # Gọi mô hình gemini-1.5-flash thông qua SDK chuẩn
                     try:
-                        response = requests.post(url, headers=headers, json=payload)
-                        if response.status_code == 200:
-                            result_json = response.json()
-                            ai_text = result_json['candidates'][0]['content']['parts'][0]['text']
-                            st.write(ai_text)
+                        response = client.models.generate_content(
+                            model='gemini-1.5-flash',
+                            contents=prompt,
+                        )
+                        if response.text:
+                            st.write(response.text)
                         else:
-                            st.error(f"Lỗi từ máy chủ Google (Mã {response.status_code}): {response.text}")
+                            st.error("Không nhận được phản hồi từ AI.")
                         st.markdown("---")
                     except Exception as e:
-                        st.error(f"Lỗi kết nối đường truyền: {e}")
+                        st.error(f"Lỗi khi gửi dữ liệu Nhóm Cluster {cluster_id} cho AI: {e}")
+                        st.markdown("---")
                         
     except Exception as e:
         st.error(f"Không thể đọc được file Excel này. Vui lòng kiểm tra lại định dạng file! Lỗi: {e}")
