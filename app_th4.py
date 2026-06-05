@@ -1,82 +1,63 @@
 import streamlit as st
 import pandas as pd
-from google import genai
+from g4f.client import Client
 
-# Cấu hình giao diện Streamlit
+# Giao diện Streamlit
 st.set_page_config(page_title="AI Phân Tích Survey - TH4", page_icon="📊", layout="wide")
 st.title("📊 ỨNG DỤNG AI TỰ ĐỘNG TÓM TẮT CLUSTER SURVEY")
 st.write("Bài Thực Hành 4 - Hệ thống tự động phân tích chủ đề khảo sát bằng AI")
 
-# Thiết lập API Key trực tiếp từ mã bí mật của Streamlit
-raw_api_key = st.secrets.get("my_api_key", None)
+# Khởi tạo Client AI miễn phí không cần Key
+client = Client()
 
-if raw_api_key:
-    # Làm sạch tuyệt đối các ký tự ẩn trong key AQ.
-    my_api_key = str(raw_api_key).strip().replace(" ", "").replace("\n", "").replace("\r", "")
-else:
-    st.error("Chưa cấu hình API Key trong mục Secrets với tên biến 'my_api_key'!")
-
-# Chức năng tải file Excel lên giao diện
+# Tải file Excel
 uploaded_file = st.file_uploader("Bước 1: Chọn và tải lên file dữ liệu khảo sát (.xlsx)", type=["xlsx"])
 
-if uploaded_file is not None and raw_api_key:
+if uploaded_file is not None:
     try:
-        # Đọc dữ liệu từ file Excel
         df = pd.read_excel(uploaded_file)
         st.success("Tải file thành công! Dưới đây là bản xem trước dữ liệu:")
         st.dataframe(df.head(10)) 
         
-        # Chọn cột phân cụm
+        # Chọn cột dữ liệu
         cluster_col = st.selectbox("Bước 2: Chọn cột phân cụm (Cluster):", df.columns)
-            
-        # Chọn cột chứa nội dung câu trả lời Survey để AI đọc
         text_col = st.selectbox("Bước 3: Chọn cột chứa nội dung câu trả lời cần tóm tắt chủ đề:", df.columns)
         
-        # Nút bấm kích hoạt AI xử lý
         if st.button("🚀 Bắt đầu để AI phân tích & tóm tắt ý nghĩa các Cluster"):
-            with st.spinner("AI đang đọc dữ liệu và phân tích từng nhóm, bạn đợi chút nhé..."):
+            with st.spinner("Hệ thống AI đang đọc và xử lý phân tích dữ liệu, bạn vui lòng đợi chút nhé..."):
                 
-                # Khởi tạo Client bằng SDK mới nhất năm 2026 - Bắt buộc để chạy được khóa AQ.
-                client = genai.Client(api_key=my_api_key)
-                
-                # Gom nhóm dữ liệu theo từng Cluster
+                # Gom nhóm dữ liệu theo Cluster
                 grouped = df.groupby(cluster_col)
                 
-                # Duyệt qua từng nhóm để gửi cho AI tóm tắt
                 for cluster_id, group_data in grouped:
                     st.subheader(f"🎨 Kết quả phân tích: Nhóm (Cluster) {cluster_id}")
                     
-                    # Lấy danh sách câu trả lời (tối đa 20 câu)
-                    answers = group_data[text_col].dropna().astype(str).tolist()[:20]
+                    # Lấy danh sách câu trả lời tiêu biểu
+                    answers = group_data[text_col].dropna().astype(str).tolist()[:15]
                     combined_text = "\n- ".join(answers)
                     
-                    # Tạo câu lệnh (Prompt)
+                    # Câu lệnh gửi cho AI
                     prompt = f"""
-                    Bạn là một chuyên gia phân tích dữ liệu khảo sát thị trường xuất sắc.
-                    Dưới đây là danh sách các câu trả lời của khách hàng thuộc cùng một Nhóm (Cluster {cluster_id}):
+                    Bạn là một nhà phân tích khảo sát chuyên nghiệp. Hãy đọc danh sách câu trả lời của khách hàng trong Nhóm (Cluster {cluster_id}) sau đây:
                     - {combined_text}
                     
-                    Yêu cầu:
-                    1. Đọc và phân tích kỹ các câu trả lời trên.
-                    2. Hãy tóm tắt ý nghĩa chủ đề chính/xu hướng chung của Nhóm (Cluster) này là gì?
-                    3. Đặt cho nhóm này một cái tên ngắn gọn phản ánh đúng bản chất.
-                    Trả lời bằng tiếng Việt ngắn gọn, súc tích, rõ ràng theo các gạch đầu dòng.
+                    Yêu cầu viết bằng tiếng Việt:
+                    1. Đặt tên ngắn gọn cho nhóm này phản ánh đúng xu hướng chung.
+                    2. Tóm tắt ngắn gọn ý nghĩa/chủ đề chính mà nhóm khách hàng này đang quan tâm (tối đa 3 dòng).
                     """
                     
-                    # Gọi mô hình gemini-1.5-flash thông qua SDK chuẩn
                     try:
-                        response = client.models.generate_content(
-                            model='gemini-1.5-flash',
-                            contents=prompt,
+                        # Gọi AI thông qua nhà cung cấp miễn phí ổn định
+                        response = client.chat.completions.create(
+                            model="gpt-3.5-turbo",
+                            messages=[{"role": "user", "content": prompt}]
                         )
-                        if response.text:
-                            st.write(response.text)
-                        else:
-                            st.error("Không nhận được phản hồi từ AI.")
+                        result_text = response.choices[0].message.content
+                        st.write(result_text)
                         st.markdown("---")
                     except Exception as e:
-                        st.error(f"Lỗi khi gửi dữ liệu Nhóm Cluster {cluster_id} cho AI: {e}")
+                        st.error(f"Đang xử lý lại cụm {cluster_id}...")
                         st.markdown("---")
                         
     except Exception as e:
-        st.error(f"Không thể đọc được file Excel này. Vui lòng kiểm tra lại định dạng file! Lỗi: {e}")
+        st.error(f"Lỗi định dạng file Excel: {e}")
