@@ -1,6 +1,5 @@
 import streamlit as st
 import google.generativeai as genai
-from google.generativeai.types import generation_types
 import pandas as pd
 
 # Cấu hình giao diện Streamlit
@@ -8,24 +7,20 @@ st.set_page_config(page_title="AI Phân Tích Survey - TH4", page_icon="📊", l
 st.title("📊 ỨNG DỤNG AI TỰ ĐỘNG TÓM TẮT CLUSTER SURVEY")
 st.write("Bài Thực Hành 4 - Hệ thống tự động phân tích chủ đề khảo sát bằng AI")
 
-# ÉP PHIÊN BẢN API SANG V1 ĐỂ TRÁNH LỖI V1BETA
-try:
-    generation_types.BaseClient.common_options['api_version'] = 'v1'
-except Exception:
-    pass
+# Thiết lập API Key trực tiếp từ mã bí mật của Streamlit
+my_api_key = st.secrets.get("my_api_key", None)
 
-# Lấy mã API an toàn từ Secrets của Streamlit
-if "GEMINI_API_KEY" in st.secrets:
-    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+if my_api_key:
+    genai.configure(api_key=my_api_key)
 else:
-    st.error("Chưa cấu hình API Key trong mục Secrets của Streamlit!")
+    st.error("Chưa cấu hình API Key trong mục Secrets với tên biến 'my_api_key'!")
 
 # Chức năng tải file Excel lên giao diện
 uploaded_file = st.file_uploader("Bước 1: Chọn và tải lên file dữ liệu khảo sát (.xlsx)", type=["xlsx"])
 
 if uploaded_file is not None:
     try:
-        # Đọc dữ liệu từ file Excel người dùng tải lên
+        # Đọc dữ liệu từ file Excel
         df = pd.read_excel(uploaded_file)
         st.success("Tải file thành công! Dưới đây là bản xem trước dữ liệu:")
         st.dataframe(df.head(10)) 
@@ -43,7 +38,7 @@ if uploaded_file is not None:
                 # Gom nhóm dữ liệu theo từng Cluster
                 grouped = df.groupby(cluster_col)
                 
-                # Gọi mô hình Gemini thông qua API v1 ổn định
+                # Gọi mô hình Gemini
                 model = genai.GenerativeModel('gemini-1.5-flash')
                 
                 # Duyệt qua từng nhóm để gửi cho AI tóm tắt
