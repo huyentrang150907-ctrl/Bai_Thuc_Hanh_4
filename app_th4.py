@@ -7,13 +7,13 @@ st.set_page_config(page_title="AI Phân Tích Survey - TH4", page_icon="📊", l
 st.title("📊 ỨNG DỤNG AI TỰ ĐỘNG TÓM TẮT CLUSTER SURVEY")
 st.write("Bài Thực Hành 4 - Hệ thống tự động phân tích chủ đề khảo sát bằng AI")
 
-# Dán trực tiếp mã key của bạn và ép hệ thống xóa bỏ mọi dấu xuống dòng ẩn
+# Hàn gắn chuỗi API Key của bạn để xóa bỏ hoàn toàn ký tự xuống dòng ẩn
 part1 = "AQ.Ab8RN6L-"
 part2 = "zeAglqNKZdA5w848fZMdcTA2A04WcUrJbLeeTYnPqw"
 my_api_key = (part1 + part2).strip().replace(" ", "").replace("\n", "").replace("\r", "")
 
-# Cấu hình thư viện Gemini với key sạch hoàn toàn
-genai.configure(api_key=my_api_key)
+# CẤU HÌNH QUAN TRỌNG: Ép hệ thống sử dụng phiên bản API v1 chuẩn để không bị lỗi v1beta 404
+genai.configure(api_key=my_api_key, transport='rest', client_options={'api_version': 'v1'})
 
 # Chức năng tải file Excel lên giao diện
 uploaded_file = st.file_uploader("Bước 1: Chọn và tải lên file dữ liệu khảo sát (.xlsx)", type=["xlsx"])
@@ -38,8 +38,8 @@ if uploaded_file is not None:
                 # Gom nhóm dữ liệu theo từng Cluster
                 grouped = df.groupby(cluster_col)
                 
-                # Khởi tạo mô hình Gemini 1.5 Flash thông qua API v1 chuẩn
-                model = genai.GenerativeModel('gemini-pro')
+                # Gọi mô hình gemini-1.5-flash trên nền tảng API v1 chuẩn
+                model = genai.GenerativeModel('gemini-1.5-flash')
                 
                 # Duyệt qua từng nhóm để gửi cho AI tóm tắt
                 for cluster_id, group_data in grouped:
