@@ -37,7 +37,7 @@ if uploaded_file is not None and my_api_key:
                 grouped = df.groupby(cluster_col)
                 
                 # Cấu hình đường link API trực tiếp đến Google Gemini 1.5 Flash
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={my_api_key}"
+                url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={my_api_key}"
                 headers = {'Content-Type': 'application/json'}
                 
                 # Duyệt qua từng nhóm để gửi cho AI tóm tắt
