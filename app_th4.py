@@ -39,7 +39,7 @@ if uploaded_file is not None:
                 grouped = df.groupby(cluster_col)
                 
                 # Khởi tạo mô hình Gemini 1.5 Flash thông qua API v1 chuẩn
-                model = genai.GenerativeModel('gemini-1.5-flash')
+                model = genai.GenerativeModel('gemini-pro')
                 
                 # Duyệt qua từng nhóm để gửi cho AI tóm tắt
                 for cluster_id, group_data in grouped:
