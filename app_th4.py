@@ -47,7 +47,7 @@ if uploaded_file is not None:
                 grouped = df.groupby(cluster_col)
                 
                 # Gọi mô hình Gemini
-                model = genai.GenerativeModel('gemini-1.5-flash')
+                model = genai.GenerativeModel('gemini-pro')
                 
                 # Duyệt qua từng nhóm để gửi cho AI tóm tắt
                 for cluster_id, group_data in grouped:
